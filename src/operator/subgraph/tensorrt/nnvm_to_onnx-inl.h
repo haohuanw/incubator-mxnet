@@ -80,6 +80,11 @@ void ConvertConvolution(NodeProto *node_proto,
                         const nnvm::IndexedGraph &ig,
                         const array_view<IndexedGraph::NodeEntry> &inputs);
 
+void ConvertDeconvolution(NodeProto *node_proto,
+                        const NodeAttrs &attrs,
+                        const nnvm::IndexedGraph &ig,
+                        const array_view<IndexedGraph::NodeEntry> &inputs);
+
 void ConvertPooling(NodeProto *node_proto,
                     const NodeAttrs &attrs,
                     const nnvm::IndexedGraph &ig,
@@ -158,6 +163,7 @@ static const std::unordered_map<std::string, ConverterFunction> converter_map = 
   {"BatchNorm", ConvertBatchNorm},
   {"clip", ConvertClip},
   {"Convolution", ConvertConvolution},
+  {"Deconvolution", ConvertDeconvolution},
   {"Concat", ConvertConcatenate},
   {"Dropout", ConvertDropout},
   {"elemwise_add", ConvertElementwiseAdd},

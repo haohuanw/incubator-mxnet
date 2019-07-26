@@ -31,6 +31,7 @@
 #include <mxnet/base.h>
 #include <nnvm/graph.h>
 #include <nnvm/pass_functions.h>
+#include <operator/nn/deconvolution-inl.h>
 
 #include "../../../common/utils.h"
 #include "../../../ndarray/ndarray_function.h"
@@ -227,6 +228,61 @@ void ConvertConvolution(NodeProto* node_proto, const NodeAttrs& attrs,
     strides->add_ints(static_cast<int64>(kval));
   }
 }  // end ConvertConvolution
+
+void ConvertDeconvolution(NodeProto* node_proto, const NodeAttrs& attrs,
+                          const nnvm::IndexedGraph& /*ig*/,
+                          const array_view<IndexedGraph::NodeEntry>& /*inputs*/) {
+  const auto& deconv_param = nnvm::get<op::DeconvolutionParam>(attrs.parsed);
+  node_proto->set_op_type("ConvTranspose");
+
+  const mxnet::TShape kernel = deconv_param.kernel;
+  const mxnet::TShape stride = deconv_param.stride;
+  const mxnet::TShape pad = deconv_param.pad;
+  const uint32_t num_group = deconv_param.num_group;
+  const mxnet::TShape dilate = deconv_param.dilate;
+
+    // dilations
+  AttributeProto* const dilations = node_proto->add_attribute();
+  dilations->set_name("dilations");
+  dilations->set_type(AttributeProto::INTS);
+  for (const dim_t kval : dilate) {
+    dilations->add_ints(static_cast<int64>(kval));
+  }
+
+  // group
+  AttributeProto* const group = node_proto->add_attribute();
+  group->set_name("group");
+  group->set_type(AttributeProto::INT);
+  group->set_i(static_cast<int64>(num_group));
+
+  // kernel shape
+  AttributeProto* const kernel_shape = node_proto->add_attribute();
+  kernel_shape->set_name("kernel_shape");
+  kernel_shape->set_type(AttributeProto::INTS);
+
+  for (const dim_t kval : kernel) {
+    kernel_shape->add_ints(static_cast<int64>(kval));
+  }
+
+  // pads
+  AttributeProto* const pads = node_proto->add_attribute();
+  pads->set_name("pads");
+  pads->set_type(AttributeProto::INTS);
+
+  for (int i =0; i < 2; i++) {
+    for (dim_t kval : pad) {
+      pads->add_ints(static_cast<int64>(kval));
+    }
+  }
+
+  // strides
+  AttributeProto* const strides = node_proto->add_attribute();
+  strides->set_name("strides");
+  strides->set_type(AttributeProto::INTS);
+  for (const dim_t kval : stride) {
+    strides->add_ints(static_cast<int64>(kval));
+  }
+} // end ConvertDeconvolution
 
 void ConvertPooling(NodeProto* node_proto, const NodeAttrs& attrs,
                     const nnvm::IndexedGraph& /*ig*/,
